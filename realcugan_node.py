@@ -197,7 +197,7 @@ class UNet2(nn.Module):
     def forward(self, x, alpha=1):
         x1 = self.conv1(x)
         x2 = self.conv1_down(x1)
-        x1 = F.pad(x1, (-4, -4, -4, -4))
+        x1 = F.pad(x1, (-16, -16, -16, -16))
         x2 = F.leaky_relu(x2, 0.1, inplace=True)
         x2 = self.conv2(x2)
         x3 = self.conv2_down(x2)
@@ -207,11 +207,12 @@ class UNet2(nn.Module):
         x3 = self.conv3_up(x3)
         x3 = F.leaky_relu(x3, 0.1, inplace=True)
         x4 = self.conv4(x2 + x3)
+        x4 *= alpha
         x4 = self.conv4_up(x4)
         x4 = F.leaky_relu(x4, 0.1, inplace=True)
         x5 = self.conv5(x1 + x4)
         x5 = F.leaky_relu(x5, 0.1, inplace=True)
-        z = self.conv_bottom(x5) * alpha
+        z = self.conv_bottom(x5)
         return z
 
 class UpCunet3x(nn.Module):
@@ -255,8 +256,8 @@ class UpCunet4x(nn.Module):
 class UpCunet2x(nn.Module):
     def __init__(self, in_nc=3, out_nc=3, nf=64, inf=4):
         super(UpCunet2x, self).__init__()
-        self.unet1 = UNet1(in_nc, out_nc * inf, deconv=True)
-        self.unet2 = UNet2(out_nc * inf, out_nc, deconv=False)
+        self.unet1 = UNet1(in_nc, out_nc, deconv=True)
+        self.unet2 = UNet2(in_nc, out_nc, deconv=False)
 
     def forward(self, x, tile_mode=0, alpha=1):
         n, c, h0, w0 = x.shape
